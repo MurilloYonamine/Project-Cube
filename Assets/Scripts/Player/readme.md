@@ -74,6 +74,14 @@ PlayerInputHandler input = playerController.PlayerInputHandler;
 
 ---
 
+## Arquitetura do Sistema
+
+Veja o diagrama de classes da arquitetura:
+
+![Architecture Diagram](./PlayerArchitecture.drawio.png)
+
+---
+
 ## Componentes Disponíveis
 
 Para documentação detalhada sobre cada componente, consulte `Components/readme.md`.
