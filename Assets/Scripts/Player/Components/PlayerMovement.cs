@@ -10,7 +10,6 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         [Header("Movement Settings")]
         [SerializeField] private float _movementSpeed = 2f;
         [SerializeField] private float _jumpForce = 5f;
-        [SerializeField] private float _groundDrag = 5f;
 
         [Header("Ground Detection")]
         [SerializeField] private float _groundDragDistance = 0.5f;
