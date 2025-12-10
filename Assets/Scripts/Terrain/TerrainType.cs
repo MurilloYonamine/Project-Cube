@@ -4,6 +4,6 @@ namespace PROJECT_CUBE.TERRAIN {
         BlueTerrain,
         RedTerrain,
         OrangeBlock,
-        Portal
+        Elevator
     }
 }

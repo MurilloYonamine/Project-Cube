@@ -19,7 +19,7 @@ namespace PROJECT_CUBE.PLAYER {
         private void Awake() {
             _playerComponents = new PlayerComponent[] {
                 _playerInputHandler = new PlayerInputHandler(),
-                _playerMovement = new PlayerMovement(),
+                _playerMovement,
                 _playerRewind,
             };
 
