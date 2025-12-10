@@ -11,6 +11,10 @@ namespace PROJECT_CUBE.LEVEL_GENERATION {
         // Componentes modulares
         private LevelGeneratorConstructor _constructor;
         private LevelGeneratorPlayerManager _playerManager;
+        
+        // Para setup via editor
+        private LevelBlueprint _pendingBlueprint;
+        private CubePalette _pendingPalette;
 
         // Eventos públicos
         public System.Action<LevelBlueprint> OnLevelBuildStarted;
@@ -30,12 +34,24 @@ namespace PROJECT_CUBE.LEVEL_GENERATION {
 
         #region Unity Lifecycle
         private void Awake() {
+            // Se há paleta pendente, configura antes de inicializar
+            if (_pendingPalette != null) {
+                _config.cubePalette = _pendingPalette;
+            }
+            
             InitializeComponents();
             SetupLevelParent();
         }
 
         private void Start() {
-            if (_blueprintToLoad != null) {
+            // Primeiro, tenta usar o blueprint pendente (do editor)
+            if (_pendingBlueprint != null) {
+                BuildLevel(_pendingBlueprint);
+                _pendingBlueprint = null;
+                _pendingPalette = null;
+            }
+            // Senão, usa o blueprint serializado
+            else if (_blueprintToLoad != null) {
                 BuildLevel(_blueprintToLoad);
             }
         }
@@ -56,10 +72,7 @@ namespace PROJECT_CUBE.LEVEL_GENERATION {
             _constructor.OnBuildStarted += (blueprint) => OnLevelBuildStarted?.Invoke(blueprint);
             _constructor.OnBuildCompleted += (blueprint) => {
                 OnLevelBuildCompleted?.Invoke(blueprint);
-                if (_playerManager.ShouldAutoSpawnPlayer(blueprint)) {
-                    _playerManager.SpawnPlayer(blueprint);
-                    OnPlayerSpawned?.Invoke(_playerManager.SpawnedPlayer);
-                }
+                // Player já foi criado antes do build, não criar novamente
             };
             _constructor.OnCubeBuilt += (pos, obj) => OnCubeBuilt?.Invoke(pos, obj);
         }
@@ -90,6 +103,13 @@ namespace PROJECT_CUBE.LEVEL_GENERATION {
                 return;
             }
 
+            // Cria o Player PRIMEIRO se estiver habilitado
+            if (blueprint.EnablePlayerSpawn) {
+                _playerManager.SpawnPlayer(blueprint);
+                OnPlayerSpawned?.Invoke(_playerManager.SpawnedPlayer);
+            }
+
+            // Depois constrói o nível
             _constructor.BuildLevel(blueprint);
         }
 
@@ -105,6 +125,16 @@ namespace PROJECT_CUBE.LEVEL_GENERATION {
         /// </summary>
         public LevelBlueprint GetCurrentBlueprint() {
             return _constructor.CurrentBlueprint;
+        }
+
+        /// <summary>
+        /// Configura o blueprint e paleta e inicia a construção do nível
+        /// Usado principalmente pelo editor
+        /// </summary>
+        public void SetupAndBuildLevel(LevelBlueprint blueprint, CubePalette palette) {
+            // Armazena como pendente - será processado no Start()
+            _pendingBlueprint = blueprint;
+            _pendingPalette = palette;
         }
         #endregion
     }

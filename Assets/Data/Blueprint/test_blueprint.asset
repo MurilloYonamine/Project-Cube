@@ -12,10 +12,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ba6b5fa3ce34644c925e7b342ab01e5, type: 3}
   m_Name: test_blueprint
   m_EditorClassIdentifier: Assembly-CSharp::PROJECT_CUBE.LEVEL_GENERATION.LevelBlueprint
-  gridSize: {x: 10, y: 10}
+  gridSize: {x: 30, y: 17}
   cubeSpacing: {x: 1, y: 0, z: 1}
   levelName: Test Blue Print
   description: 
-  cubes: []
-  playerSpawnPosition: {x: 0, y: 0}
+  cubes:
+  - cubeTypeIndex: 0
+    gridPosition: {x: 3, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 2, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 5, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 4, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 6, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 7, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 8, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 9, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 10, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 11, y: 11}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 17, y: 7}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 18, y: 7}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 19, y: 7}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 20, y: 7}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 21, y: 7}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 27, y: 12}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 24, y: 12}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 25, y: 12}
+  - cubeTypeIndex: 0
+    gridPosition: {x: 26, y: 12}
+  playerSpawnPosition: {x: 4, y: 10}
   enablePlayerSpawn: 1

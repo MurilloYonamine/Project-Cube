@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: test_pallete
   m_EditorClassIdentifier: Assembly-CSharp::PROJECT_CUBE.LEVEL_GENERATION.CubePalette
   _cubeTypes:
-  - _typeName: New Cube
-    _prefab: {fileID: 0}
+  - _typeName: Blue Terrain
+    _prefab: {fileID: 9027277081548094917, guid: 9bf2a85f45986ab479b05497f5105192, type: 3}
     _cubeType: 0
-  - _typeName: New Cube
-    _prefab: {fileID: 0}
-    _cubeType: 0
+  - _typeName: Player
+    _prefab: {fileID: 4998474649887706235, guid: 35fcaded7dfd12e45bfb4aebb2a256f8, type: 3}
+    _cubeType: 1

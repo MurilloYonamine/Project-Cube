@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 
 namespace PROJECT_CUBE.LEVEL_GENERATION.EDITOR {
@@ -23,9 +24,48 @@ namespace PROJECT_CUBE.LEVEL_GENERATION.EDITOR {
         private bool _showSettings = true;
         private bool _showPalette = true;
 
+        private string _previousScenePath = null;
+        private bool _isPlayingBlueprint = false;
+        private GameObject _cinemachinePrefab = null;
+        private static GameObject _cinemachineToInstantiate = null;
         [MenuItem("Level Generation/Blueprint Editor Window")]
         public static void ShowWindow() {
             GetWindow<LevelBlueprintEditorWindow>("Blueprint Editor");
+        }
+
+        private void OnEnable() {
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+
+        private void OnDisable() {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        }
+
+        private void OnPlayModeStateChanged(PlayModeStateChange state) {
+            if (state == PlayModeStateChange.EnteredPlayMode && _cinemachineToInstantiate != null) {
+                // Instancia a Cinemachine quando entra no Play Mode
+                var cinemachineInstance = Instantiate(_cinemachineToInstantiate);
+                cinemachineInstance.name = "Cinemachine";
+                Debug.Log("Cinemachine carregada para a cena de teste");
+
+                // Cria um GameObject auxiliar para setup
+                var setupObj = new GameObject("_CinemachineSetup");
+                setupObj.AddComponent<CinemachineSetup>();
+
+                _cinemachineToInstantiate = null;
+            } else if (state == PlayModeStateChange.EnteredEditMode && _isPlayingBlueprint) {
+                _isPlayingBlueprint = false;
+                
+                // Volta para a cena anterior
+                if (!string.IsNullOrEmpty(_previousScenePath)) {
+                    EditorSceneManager.OpenScene(_previousScenePath, OpenSceneMode.Single);
+                    Debug.Log($"Voltou para: {_previousScenePath}");
+                } else {
+                    Debug.Log("Nenhuma cena anterior para retornar");
+                }
+                
+                _previousScenePath = null;
+            }
         }
 
         private void OnGUI() {
@@ -91,6 +131,10 @@ namespace PROJECT_CUBE.LEVEL_GENERATION.EDITOR {
                 Debug.Log("Blueprint saved!");
             }
 
+            if (GUILayout.Button("Play", EditorStyles.toolbarButton, GUILayout.Width(60))) {
+                PlayBlueprint();
+            }
+
             EditorGUILayout.EndHorizontal();
         }
 
@@ -110,6 +154,10 @@ namespace PROJECT_CUBE.LEVEL_GENERATION.EDITOR {
                 EditorGUI.EndDisabledGroup();
 
                 _currentBlueprint.CubeSpacing = EditorGUILayout.Vector3Field("Cube Spacing", _currentBlueprint.CubeSpacing);
+
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Cinemachine", EditorStyles.boldLabel);
+                _cinemachinePrefab = EditorGUILayout.ObjectField("Camera Prefab", _cinemachinePrefab, typeof(GameObject), false) as GameObject;
 
                 EditorGUILayout.Space();
                 _currentBlueprint.EnablePlayerSpawn = EditorGUILayout.Toggle("Enable Player Spawn", _currentBlueprint.EnablePlayerSpawn);
@@ -354,6 +402,58 @@ namespace PROJECT_CUBE.LEVEL_GENERATION.EDITOR {
 
                 Debug.Log($"Paleta criada em {path}");
             }
+        }
+
+        private void PlayBlueprint() {
+            if (_currentBlueprint == null) {
+                EditorUtility.DisplayDialog("Erro", "Carregue um Blueprint primeiro!", "OK");
+                return;
+            }
+
+            if (_currentPalette == null) {
+                EditorUtility.DisplayDialog("Erro", "Carregue uma Paleta para jogar!", "OK");
+                return;
+            }
+
+            // Salva o blueprint antes de jogar
+            EditorUtility.SetDirty(_currentBlueprint);
+            AssetDatabase.SaveAssets();
+
+            // Salva a cena atual antes de criar a nova
+            _previousScenePath = EditorSceneManager.GetActiveScene().path;
+            _isPlayingBlueprint = true;
+
+            // Cria uma cena temporária
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+
+            // Cria o LevelBuilder PRIMEIRO
+            GameObject levelBuilderObj = new GameObject("LevelBuilder");
+            var levelBuilder = levelBuilderObj.AddComponent<LevelBuilder>();
+
+            // Cria o LevelManager e configura a referência ao LevelBuilder
+            GameObject levelManagerObj = new GameObject("LevelManager");
+            var levelManager = levelManagerObj.AddComponent<LevelManager>();
+            
+            // Usa reflection para setar a referência do LevelBuilder no LevelManager
+            var levelBuilderField = levelManager.GetType().GetField("_levelBuilder", 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (levelBuilderField != null) {
+                levelBuilderField.SetValue(levelManager, levelBuilder);
+            }
+
+            // Configura o LevelBuilder com o Blueprint e Paleta
+            levelBuilder.SetupAndBuildLevel(_currentBlueprint, _currentPalette);
+
+            // Armazena a Cinemachine para instanciar quando entrar no Play Mode
+            if (_cinemachinePrefab != null) {
+                _cinemachineToInstantiate = _cinemachinePrefab;
+            }
+
+            // Inicia o playmode
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorApplication.isPlaying = true;
+
+            Debug.Log($"Iniciando Blueprint: {_currentBlueprint.LevelName}");
         }
     }
 }
