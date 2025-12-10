@@ -2,13 +2,15 @@ using System;
 using UnityEngine;
 
 using PROJECT_CUBE.PLAYER.COMPONENTS;
-using PROJECT_CUBE.TERRAIN;
+using PROJECT_CUBE.PLAYER.COMPONENTS.REWIND;
 
 namespace PROJECT_CUBE.PLAYER {
     public class PlayerController : MonoBehaviour {
         [Header("Components")]
         private PlayerComponent[] _playerComponents;
         [SerializeField] private PlayerMovement _playerMovement;
+        [SerializeField] private PlayerRewind _playerRewind;
+        
         private PlayerInputHandler _playerInputHandler;
 
         [Header("Terrain Settings")]
@@ -23,6 +25,7 @@ namespace PROJECT_CUBE.PLAYER {
             _playerComponents = new PlayerComponent[] {
                 _playerInputHandler = new PlayerInputHandler(),
                 _playerMovement = new PlayerMovement(),
+                _playerRewind,
             };
 
             _terrainModifierManager = new TerrainModifierManager
@@ -41,6 +44,12 @@ namespace PROJECT_CUBE.PLAYER {
         private void Update() {
             ForEachComponent(component => component.UpdateComponent());
         }
+        private void FixedUpdate() {
+            ForEachComponent(component => component.FixedUpdateComponent());
+        }
+        private void LateUpdate() {
+            ForEachComponent(component => component.LateUpdateComponent());
+        }
         private void OnEnable() {
             ForEachComponent(component => component.OnEnableComponent());
         }
@@ -58,6 +67,7 @@ namespace PROJECT_CUBE.PLAYER {
         #region Public Properties
         public PlayerMovement PlayerMovement => _playerMovement;
         public PlayerInputHandler PlayerInputHandler => _playerInputHandler;
+        public PlayerRewind PlayerRewind => _playerRewind;
         #endregion
 
         #region Public Methods

@@ -33,6 +33,8 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             PlayerInputHandler.OnMovementInput -= HandleMovement;
         }
         public override void UpdateComponent() {
+            base.UpdateComponent();
+            
             CheckGroundStatus();
             if (_isMovementEnabled) {
                 AutoMovement();
