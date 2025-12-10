@@ -1282,9 +1282,6 @@ MonoBehaviour:
     _movementSpeed: 0
     _jumpForce: 0
     _groundDragDistance: 0
-  _blueTerrainSpeedMultiplier: 1.5
-  _redTerrainSpeedMultiplier: 0.5
-  _orangeBlockJumpMultiplier: 1.5
   _playerRewind:
     enabled: 1
     _ghostPrefab: {fileID: -6774425688877721536, guid: dae788af5095cd54ca6941a4ed9b33d5, type: 3}

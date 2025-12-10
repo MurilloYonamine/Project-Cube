@@ -3,6 +3,7 @@ using UnityEngine;
 
 using PROJECT_CUBE.PLAYER.COMPONENTS;
 using PROJECT_CUBE.PLAYER.COMPONENTS.REWIND;
+using PROJECT_CUBE.TERRAIN;
 
 namespace PROJECT_CUBE.PLAYER {
     public class PlayerController : MonoBehaviour {
@@ -10,15 +11,9 @@ namespace PROJECT_CUBE.PLAYER {
         private PlayerComponent[] _playerComponents;
         [SerializeField] private PlayerMovement _playerMovement;
         [SerializeField] private PlayerRewind _playerRewind;
-        
         private PlayerInputHandler _playerInputHandler;
-
-        [Header("Terrain Settings")]
-        [SerializeField] private float _blueTerrainSpeedMultiplier = 1.5f;
-        [SerializeField] private float _redTerrainSpeedMultiplier = 0.5f;
-        [SerializeField] private float _orangeBlockJumpMultiplier = 1.5f;
         
-        private TerrainModifierManager _terrainModifierManager;
+        private TerrainModifier _terrainModifier;
 
         #region Unity Methods
         private void Awake() {
@@ -28,12 +23,7 @@ namespace PROJECT_CUBE.PLAYER {
                 _playerRewind,
             };
 
-            _terrainModifierManager = new TerrainModifierManager
-            {
-                BlueTerrainSpeedMultiplier = _blueTerrainSpeedMultiplier,
-                RedTerrainSpeedMultiplier = _redTerrainSpeedMultiplier,
-                OrangeBlockJumpMultiplier = _orangeBlockJumpMultiplier
-            };
+            _terrainModifier = new TerrainModifier();
 
             ForEachComponent(component => component.InitializeComponent(this));
             ForEachComponent(component => component.AwakeComponent());
@@ -72,11 +62,11 @@ namespace PROJECT_CUBE.PLAYER {
 
         #region Public Methods
         public void EnterTerrain(TerrainType terrainType) {
-            _terrainModifierManager?.OnTerrainChange(terrainType);
+            _terrainModifier?.OnTerrainChange(terrainType);
         }
 
         public void ExitTerrain() {
-            _terrainModifierManager?.OnTerrainChange(TerrainType.None);
+            _terrainModifier?.OnTerrainChange(TerrainType.None);
         }
 
         public void StopMovement() {

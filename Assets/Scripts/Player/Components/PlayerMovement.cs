@@ -7,7 +7,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
     public class PlayerMovement : PlayerComponent {
         [Header("Unity Components")]
         private Rigidbody _rigidbody;
-        private TerrainModifierManager _terrainModifierManager;
+        private TerrainModifier _terrainModifierManager;
 
         [Header("Movement Settings")]
         [SerializeField] private float _movementSpeed = 2f;
@@ -22,7 +22,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
 
         public override void AwakeComponent() {
             _rigidbody = _playerController.GetComponent<Rigidbody>();
-            _terrainModifierManager = new TerrainModifierManager();
+            _terrainModifierManager = new TerrainModifier();
             LogMovementInput(Vector2.zero);
         }
 

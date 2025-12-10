@@ -1,10 +1,10 @@
 using PROJECT_CUBE.TERRAIN;
 
-namespace PROJECT_CUBE.PLAYER.COMPONENTS {
+namespace PROJECT_CUBE.TERRAIN {
     public class TerrainModifier {
-        public float BlueTerrainSpeedMultiplier = 1.5f;
-        public float RedTerrainSpeedMultiplier = 0.5f;
-        public float OrangeBlockJumpMultiplier = 1.5f;
+        public const float BLUE_TERRAIN_SPEED_MULTIPLIER = 1.5f;
+        public const float RED_TERRAIN_SPEED_MULTIPLIER = 0.5f;
+        public const float ORANGE_BLOCK_JUMP_MULTIPLIER = 1.5f;
 
         private TerrainType _currentTerrainType = TerrainType.None;
         public float CurrentSpeedModifier { get; private set; } = 1f;
@@ -14,12 +14,12 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             _currentTerrainType = terrainType;
 
             CurrentSpeedModifier = terrainType switch {
-                TerrainType.BlueTerrain => BlueTerrainSpeedMultiplier,
-                TerrainType.RedTerrain => RedTerrainSpeedMultiplier,
+                TerrainType.BlueTerrain => BLUE_TERRAIN_SPEED_MULTIPLIER,
+                TerrainType.RedTerrain => RED_TERRAIN_SPEED_MULTIPLIER,
                 _ => 1f
             };
 
-            CurrentJumpModifier = terrainType == TerrainType.OrangeBlock ? OrangeBlockJumpMultiplier : 1f;
+            CurrentJumpModifier = terrainType == TerrainType.OrangeBlock ? ORANGE_BLOCK_JUMP_MULTIPLIER : 1f;
 
             string terrainName = terrainType switch {
                 TerrainType.BlueTerrain => "Chão Azul (+50% velocidade)",
