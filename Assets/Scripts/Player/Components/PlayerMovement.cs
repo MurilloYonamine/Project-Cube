@@ -1,11 +1,13 @@
 using UnityEngine;
 using System;
+using PROJECT_CUBE.TERRAIN;
 
 namespace PROJECT_CUBE.PLAYER.COMPONENTS {
     [Serializable]
     public class PlayerMovement : PlayerComponent {
         [Header("Unity Components")]
         private Rigidbody _rigidbody;
+        private TerrainModifierManager _terrainModifierManager;
 
         [Header("Movement Settings")]
         [SerializeField] private float _movementSpeed = 2f;
@@ -15,9 +17,12 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         [Header("Ground Detection")]
         [SerializeField] private float _groundDragDistance = 0.5f;
         private bool _isGrounded;
+        
+        private bool _isMovementEnabled = true;
 
         public override void AwakeComponent() {
             _rigidbody = _playerController.GetComponent<Rigidbody>();
+            _terrainModifierManager = new TerrainModifierManager();
             LogMovementInput(Vector2.zero);
         }
 
@@ -29,7 +34,9 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         }
         public override void UpdateComponent() {
             CheckGroundStatus();
-            AutoMovement();
+            if (_isMovementEnabled) {
+                AutoMovement();
+            }
         }
         private void HandleMovement(Vector2 movementInput) {
             _movementInput = movementInput;
@@ -48,17 +55,38 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             }
         }
         private void Jump() {
-            _rigidbody.linearVelocity = new Vector3(_rigidbody.linearVelocity.x, 0, _rigidbody.linearVelocity.z);
-            _rigidbody.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);
+            float jumpModifier = _terrainModifierManager != null ? _terrainModifierManager.CurrentJumpModifier : 1f;
+
+            _rigidbody.linearVelocity = new Vector3(
+                _rigidbody.linearVelocity.x,
+                y: 0,
+                _rigidbody.linearVelocity.z
+            );
+
+            _rigidbody.AddForce(
+                _jumpForce * jumpModifier * Vector3.up,
+                ForceMode.Impulse
+            );
         }
         private void AutoMovement() {
+            float speedModifier = _terrainModifierManager != null ? _terrainModifierManager.CurrentSpeedModifier : 1f;
             float direction = _movementInput.x != 0 ? _movementInput.x : 1f;
-            float movement = Mathf.Sign(direction) * _movementSpeed;
-            _rigidbody.linearVelocity = new Vector3(movement, _rigidbody.linearVelocity.y, _rigidbody.linearVelocity.z);
+            float movement = Mathf.Sign(direction) * _movementSpeed * speedModifier;
+
+            _rigidbody.linearVelocity = new Vector3(
+                movement, 
+                _rigidbody.linearVelocity.y, 
+                _rigidbody.linearVelocity.z
+            );
         }
         private void CheckGroundStatus() {
             Vector3 raycastOrigin = _rigidbody.position + Vector3.down * 0.5f;
-            _isGrounded = Physics.Raycast(raycastOrigin, Vector3.down, _groundDragDistance);
+
+            _isGrounded = Physics.Raycast(
+                raycastOrigin, 
+                Vector3.down, 
+                _groundDragDistance
+            );
 
             PlayerDebugManager.Instance.AddLine($"Está no chão: {_isGrounded}", "GroundCheck");
         }
@@ -83,6 +111,10 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
                 _ => "Nenhum Input de Movimento",
             };
             PlayerDebugManager.Instance.AddLine($"{message}", nameof(PlayerMovement));
+        }
+
+        public void SetMovementEnabled(bool enabled) {
+            _isMovementEnabled = enabled;
         }
     }
 }

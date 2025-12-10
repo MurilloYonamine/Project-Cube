@@ -1248,8 +1248,10 @@ MonoBehaviour:
   _playerMovement:
     _movementSpeed: 0
     _jumpForce: 0
-    _groundDrag: 0
     _groundDragDistance: 0
+  _blueTerrainSpeedMultiplier: 1.5
+  _redTerrainSpeedMultiplier: 0.5
+  _orangeBlockJumpMultiplier: 1.5
 --- !u!65 &1907738727
 BoxCollider:
   m_ObjectHideFlags: 0
