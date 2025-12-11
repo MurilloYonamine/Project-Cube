@@ -21,7 +21,7 @@ namespace PROJECT_CUBE.HAZARDS {
         private void OnTriggerEnter(Collider other) {
             PLAYER.PlayerController player = other.GetComponent<PLAYER.PlayerController>();
             if (player != null) {
-                PlayerHealthSystem health = player.GetComponent<PlayerHealthSystem>();
+                PlayerHealth health = player.PlayerHealth;
                 if (health != null) {
                     health.TakeDamage(_damage);
                 }

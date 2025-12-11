@@ -53,7 +53,7 @@ namespace PROJECT_CUBE.HAZARDS {
             
             CannonProjectile projectileScript = projectile.GetComponent<CannonProjectile>();
             if (projectileScript != null) {
-                projectileScript.Initialize(_barrelTip.forward, _projectileSpeed);
+                projectileScript.Initialize(Vector3.up, _projectileSpeed);
             }
             
             AudioManager.Instance?.PlaySound("Cannon");

@@ -94,7 +94,9 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS.REWIND {
 
             _currentActiveGhost.InitializeGhost(newData);
             
-            PlayerDebugManager.Instance.AddLine($"Novo ghost criado", "PlayerRewind");
+            if (PlayerDebugManager.Instance != null) {
+                PlayerDebugManager.Instance.AddLine($"Novo ghost criado", "PlayerRewind");
+            }
         }
 
         private void TriggerRewind() {

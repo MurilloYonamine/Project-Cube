@@ -4,13 +4,14 @@ using PROJECT_CUBE.PLAYER.COMPONENTS;
 using PROJECT_CUBE.CARDS;
 
 namespace PROJECT_CUBE {
-    public class PlayerHealthSystem : PlayerComponent {
+    [Serializable]
+    public class PlayerHealth : PlayerComponent {
         [Header("Health Settings")]
-        private int _maxHealth = 3;
-        private int _currentHealth;
+        [SerializeField] private int _maxHealth = 3;
+        [SerializeField] private int _currentHealth;
         
         [Header("Damage Settings")]
-        private float _invulnerabilityDuration = 1f;
+        [SerializeField] private float _invulnerabilityDuration = 1f;
         private float _invulnerabilityTimer = 0f;
         
         public static event Action<int, int> OnHealthChanged; // current, max

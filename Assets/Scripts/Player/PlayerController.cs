@@ -11,6 +11,7 @@ namespace PROJECT_CUBE.PLAYER {
         private PlayerComponent[] _playerComponents;
         [SerializeField] private PlayerMovement _playerMovement;
         [SerializeField] private PlayerRewind _playerRewind;
+        [SerializeField] private PlayerHealth _playerHealth;
         private PlayerInputHandler _playerInputHandler;
         
         private TerrainModifier _terrainModifier;
@@ -21,6 +22,7 @@ namespace PROJECT_CUBE.PLAYER {
                 _playerInputHandler = new PlayerInputHandler(),
                 _playerMovement,
                 _playerRewind,
+                _playerHealth,
             };
 
             _terrainModifier = new TerrainModifier();
@@ -58,6 +60,7 @@ namespace PROJECT_CUBE.PLAYER {
         public PlayerMovement PlayerMovement => _playerMovement;
         public PlayerInputHandler PlayerInputHandler => _playerInputHandler;
         public PlayerRewind PlayerRewind => _playerRewind;
+        public PlayerHealth PlayerHealth => _playerHealth;
         #endregion
 
         #region Public Methods

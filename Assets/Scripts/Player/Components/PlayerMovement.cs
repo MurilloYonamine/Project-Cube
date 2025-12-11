@@ -193,7 +193,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
                 Vector2 input when input.y < 0 => "Caindo mais rápido",
                 _ => "Nenhum Input de Movimento",
             };
-            PlayerDebugManager.Instance.AddLine($"{message}", nameof(PlayerMovement));
+            PlayerDebugManager.Instance?.AddLine($"{message}", nameof(PlayerMovement));
         }
 
         public void SetMovementEnabled(bool enabled) {

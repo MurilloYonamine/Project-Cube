@@ -60,6 +60,11 @@ namespace PROJECT_CUBE {
             }
             _instance = this;
             _isQuitting = false;
+            
+            // Garante que o GameObject é raiz antes de usar DontDestroyOnLoad
+            if (gameObject.transform.parent != null) {
+                gameObject.transform.SetParent(null);
+            }
             DontDestroyOnLoad(gameObject);
             
             InitializeSounds();

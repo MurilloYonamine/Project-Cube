@@ -5,7 +5,7 @@ namespace PROJECT_CUBE.CARDS {
     public class CardBuffManager : MonoBehaviour {
         [Header("References")]
         private PLAYER.PlayerController _playerController;
-        private PlayerHealthSystem _healthSystem;
+        private PlayerHealth _playerHealth;
         
         [Header("Buff States")]
         private bool _hasDoubleJump = false;
@@ -21,7 +21,7 @@ namespace PROJECT_CUBE.CARDS {
         
         private void Awake() {
             _playerController = GetComponent<PLAYER.PlayerController>();
-            _healthSystem = GetComponent<PlayerHealthSystem>();
+            _playerHealth = _playerController.PlayerHealth;
             _originalScale = transform.localScale;
         }
         
@@ -80,8 +80,8 @@ namespace PROJECT_CUBE.CARDS {
         
         // Array - +1 Vida
         private void ApplyExtraLife() {
-            if (_healthSystem != null) {
-                _healthSystem.AddLife(1);
+            if (_playerHealth != null) {
+                _playerHealth.AddLife(1);
                 PlayerDebugManager.Instance?.AddLine("+1 Vida adicionada!", "CardBuffManager");
             }
         }
