@@ -12,16 +12,22 @@ public class MenuManager : MonoBehaviour {
     [SerializeField] private Camera mainMenuCamera;
     [SerializeField] private Camera settingsCamera;
     [SerializeField] private Camera phaseSelectorCamera;
+    [SerializeField] private Camera creditsCamera;
+    [SerializeField] private Camera controlsCamera;
 
     [Header("Canvas Groups")]
     [SerializeField] private CanvasGroup mainMenuCanvasGroup;
     [SerializeField] private CanvasGroup settingsCanvasGroup;
     [SerializeField] private CanvasGroup phaseSelectorCanvasGroup;
+    [SerializeField] private CanvasGroup creditsCanvasGroup;
+    [SerializeField] private CanvasGroup controlsCanvasGroup;
 
     [Header("States")]
     [SerializeField] private MainMenuState mainMenuState;
     [SerializeField] private SettingsState settingsState;
     [SerializeField] private PhaseSelectorState phaseSelectorState;
+    [SerializeField] private CreditsState creditsState;
+    [SerializeField] private ControlsState controlsState;
 
     [Header("Timings")]
     [SerializeField] private float fadeDuration = 0.3f;
@@ -89,6 +95,22 @@ public class MenuManager : MonoBehaviour {
             states.Add(MenuState.StateType.PhaseSelector, phaseSelectorState);
             phaseSelectorCanvasGroup.alpha = 0f;
             phaseSelectorCamera.enabled = false;
+        }
+
+        // Inicializa Credits
+        if (creditsState != null) {
+            creditsState.Initialize(this, creditsCanvasGroup, creditsCamera);
+            states.Add(MenuState.StateType.Credits, creditsState);
+            creditsCanvasGroup.alpha = 0f;
+            creditsCamera.enabled = false;
+        }
+
+        // Inicializa Controls
+        if (controlsState != null) {
+            controlsState.Initialize(this, controlsCanvasGroup, controlsCamera);
+            states.Add(MenuState.StateType.Controls, controlsState);
+            controlsCanvasGroup.alpha = 0f;
+            controlsCamera.enabled = false;
         }
     }
 

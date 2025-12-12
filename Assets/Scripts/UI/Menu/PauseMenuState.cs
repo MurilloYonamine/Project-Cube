@@ -48,28 +48,38 @@ public class PauseMenuState : PauseState
 
     private void OnResumeClicked()
     {
+        PlayClickSound();
         Debug.Log("Resume clicked");
         pauseManager.Resume();
     }
 
     private void OnSettingsClicked()
     {
+        PlayClickSound();
         Debug.Log("Settings clicked from Pause");
         pauseManager.ChangeState(StateType.Settings);
     }
 
     private void OnPhaseSelectorClicked()
     {
+        PlayClickSound();
         Debug.Log("Phase Selector clicked from Pause");
         pauseManager.ChangeState(StateType.PhaseSelector);
     }
 
     private void OnQuitClicked()
     {
+        PlayClickSound();
         Debug.Log("Quit to Main Menu clicked");
         pauseManager.ResetTimeScale();
         // TODO: Carregar a cena do menu principal
         // SceneManager.LoadScene("MainMenu");
+    }
+
+    private void PlayClickSound()
+    {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySound("Sounds/menu_escolha", null, 1f);
     }
 
     private void OnDestroy()

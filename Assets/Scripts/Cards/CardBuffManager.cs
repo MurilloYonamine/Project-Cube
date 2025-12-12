@@ -28,6 +28,9 @@ namespace PROJECT_CUBE.CARDS {
         public void ApplyCard(CardData card) {
             PlayerDebugManager.Instance?.AddLine($"Carta aplicada: {card.displayName}", "CardBuffManager");
             
+            // Notifica a UI sobre o buff
+            NotifyBuffUI(card);
+            
             switch (card.type) {
                 case CardType.Keyframe:
                     ApplyDoubleJump();
@@ -56,6 +59,17 @@ namespace PROJECT_CUBE.CARDS {
                 case CardType.Mirror:
                     ApplyFlip();
                     break;
+            }
+        }
+        
+        private void NotifyBuffUI(CardData card) {
+            // Cria a UI automaticamente se não existir
+            ActiveBuffsUI ui = ActiveBuffsUI.GetOrCreate();
+            
+            if (card.durationType == BuffDurationType.Permanent) {
+                ui.AddPermanentBuff(card.displayName);
+            } else {
+                ui.AddTemporaryBuff(card.displayName, card.duration);
             }
         }
         

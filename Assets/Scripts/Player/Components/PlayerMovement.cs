@@ -66,11 +66,6 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         }
         
         private void HandleMovement(Vector2 movementInput) {
-            // Impede movimento para a esquerda
-            if (movementInput.x < 0) {
-                movementInput.x = 0;
-            }
-            
             _movementInput = movementInput;
 
             LogMovementInput(movementInput);
@@ -138,7 +133,8 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
                 speedModifier *= _cardBuffManager.GetSpeedMultiplier();
             }
 
-            float direction = _movementInput.x != 0 ? _movementInput.x : 1f;
+            // Mantém a última direção se não houver input
+            float direction = _movementInput.x != 0 ? _movementInput.x : _facingDirection;
             
             // Aplica flip da carta Mirror
             if (_cardBuffManager != null && _cardBuffManager.IsFlipped()) {

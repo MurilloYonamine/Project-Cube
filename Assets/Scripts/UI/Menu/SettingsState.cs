@@ -120,6 +120,9 @@ public partial class SettingsState : MenuState
 
     private void OnBackClicked()
     {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySound("Sounds/menu_escolha", volume: 1f);
+            
         Debug.Log("[SettingsState] Back button clicked");
         
         if (menuManager == null)

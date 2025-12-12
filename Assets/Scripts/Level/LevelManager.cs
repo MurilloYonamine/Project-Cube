@@ -15,8 +15,7 @@ namespace PROJECT_CUBE.LEVEL {
             }
         }
         
-        private const string LEVEL_KEY = "UnlockedLevel";
-        private int _currentUnlockedLevel = 1;
+        private int _currentUnlockedLevel = 999;
         
         public int CurrentUnlockedLevel => _currentUnlockedLevel;
         
@@ -30,15 +29,10 @@ namespace PROJECT_CUBE.LEVEL {
             gameObject.transform.SetParent(null);
 
             DontDestroyOnLoad(gameObject);
-            LoadProgress();
         }
         
         public void CompleteLevel(int levelNumber) {
-            if (levelNumber >= _currentUnlockedLevel) {
-                _currentUnlockedLevel = levelNumber + 1;
-                SaveProgress();
-                PlayerDebugManager.Instance?.AddLine($"Fase {levelNumber} completada! Fase {_currentUnlockedLevel} desbloqueada", "LevelManager");
-            }
+            PlayerDebugManager.Instance?.AddLine($"Fase {levelNumber} completada!", "LevelManager");
         }
         
         public bool IsLevelUnlocked(int levelNumber) {
@@ -60,21 +54,11 @@ namespace PROJECT_CUBE.LEVEL {
         }
         
         public void LoadLevelSelect() {
-            SceneManager.LoadScene("LevelSelect");
-        }
-        
-        private void SaveProgress() {
-            PlayerPrefs.SetInt(LEVEL_KEY, _currentUnlockedLevel);
-            PlayerPrefs.Save();
-        }
-        
-        private void LoadProgress() {
-            _currentUnlockedLevel = PlayerPrefs.GetInt(LEVEL_KEY, 1);
+            SceneManager.LoadScene("Menu");
         }
         
         public void ResetProgress() {
-            _currentUnlockedLevel = 1;
-            SaveProgress();
+            // Todos os níveis estão sempre desbloqueados
         }
 
         public void Quit() {

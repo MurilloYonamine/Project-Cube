@@ -74,6 +74,9 @@ public partial class PhaseSelectorState : MenuState
 
     private void OnPhaseSelected(int phaseNumber)
     {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySound("Sounds/menu_escolha", volume: 1f);
+            
         Debug.Log($"Phase {phaseNumber} selected - Loading scene...");
         
         // Reseta o timeScale se estiver vindo do pause
@@ -130,6 +133,9 @@ public partial class PhaseSelectorState : MenuState
 
     private void OnBackClicked()
     {
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySound("Sounds/menu_escolha", volume: 1f);
+            
         Debug.Log("[PhaseSelectorState] Back button clicked");
         
         if (menuManager == null)

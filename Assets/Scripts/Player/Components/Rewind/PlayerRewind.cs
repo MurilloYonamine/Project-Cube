@@ -75,11 +75,15 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS.REWIND {
 
             PlayerDebugManager.Instance.AddLine($"Snapshot! Total ghosts: {_pastGhosts.Count}", "PlayerRewind");
 
+            // Mantém sempre o primeiro ghost (nunca remove o índice 0)
             if (_pastGhosts.Count > _maxSnapshots) {
-                GhostEntity oldestGhost = _pastGhosts[0];
-                _pastGhosts.RemoveAt(0);
-                if (oldestGhost != null) UnityEngine.Object.Destroy(oldestGhost.gameObject);
-                PlayerDebugManager.Instance.AddLine($"Ghost mais antigo removido", "PlayerRewind");
+                // Remove o ghost no índice 1 (segundo mais antigo), mantendo o primeiro
+                if (_pastGhosts.Count > 1) {
+                    GhostEntity ghostToRemove = _pastGhosts[1];
+                    _pastGhosts.RemoveAt(1);
+                    if (ghostToRemove != null) UnityEngine.Object.Destroy(ghostToRemove.gameObject);
+                    PlayerDebugManager.Instance.AddLine($"Ghost antigo removido (primeiro mantido)", "PlayerRewind");
+                }
             }
 
             _currentActiveGhost = null;
@@ -120,6 +124,12 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS.REWIND {
 
         private void TriggerRewind() {
             if (_isRewinding) return;
+            
+            // Verifica se o PlayerController ainda existe
+            if (_playerController == null) {
+                PlayerDebugManager.Instance?.AddLine("PlayerController foi destruído!", "PlayerRewind");
+                return;
+            }
 
             if (_currentActiveGhost != null || _pastGhosts.Count > 0) {
                 _playerController.StartCoroutine(RewindRoutine());
@@ -137,7 +147,10 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS.REWIND {
             _playerController.PlayerMovement.enabled = false;
 
             Rigidbody rigidbody = _playerController.GetComponent<Rigidbody>();
-            if (rigidbody) rigidbody.linearVelocity = Vector3.zero;
+            if (rigidbody) {
+                rigidbody.linearVelocity = Vector3.zero;
+                rigidbody.useGravity = false; // Desativa gravidade durante rewind
+            }
 
             GhostEntity ghostToRewind = null;
 
@@ -183,10 +196,102 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS.REWIND {
 
             _snapshotTimer = 0f;
 
+            // Reativa gravidade
+            if (rigidbody != null) {
+                rigidbody.useGravity = true;
+            }
+
             _playerController.PlayerMovement.enabled = true;
             _isRewinding = false;
 
             _shouldCreateNewGhost = true;
+        }
+
+        public void RewindToFirstCheckpoint() {
+            if (_isRewinding) return;
+            
+            if (_playerController == null) {
+                PlayerDebugManager.Instance?.AddLine("PlayerController foi destruído!", "PlayerRewind");
+                return;
+            }
+
+            // Volta para o primeiro ghost se existir
+            if (_pastGhosts.Count > 0) {
+                _playerController.StartCoroutine(RewindToFirstRoutine());
+            }
+        }
+
+        private IEnumerator RewindToFirstRoutine() {
+            _isRewinding = true;
+            _playerController.PlayerMovement.enabled = false;
+
+            Rigidbody rigidbody = _playerController.GetComponent<Rigidbody>();
+            if (rigidbody) {
+                rigidbody.linearVelocity = Vector3.zero;
+                rigidbody.useGravity = false;
+            }
+
+            // Destroi o ghost atual se existir
+            if (_currentActiveGhost != null) {
+                UnityEngine.Object.Destroy(_currentActiveGhost.gameObject);
+                _currentActiveGhost = null;
+            }
+
+            // Volta por TODOS os ghosts do mais recente ao mais antigo (exceto o primeiro)
+            for (int i = _pastGhosts.Count - 1; i >= 1; i--) {
+                GhostEntity ghost = _pastGhosts[i];
+                
+                if (ghost != null) {
+                    ghost.transform.SetParent(null);
+                    
+                    List<Vector3> pathPositions = ghost.GetReversePath();
+                    List<Quaternion> pathRotations = ghost.GetReverseRotation();
+
+                    yield return _playerController.StartCoroutine(FollowPathBackwards(pathPositions, pathRotations));
+
+                    UnityEngine.Object.Destroy(ghost.gameObject);
+                }
+            }
+
+            // Agora volta pelo caminho do primeiro ghost
+            if (_pastGhosts.Count > 0) {
+                GhostEntity firstGhost = _pastGhosts[0];
+                
+                if (firstGhost != null) {
+                    firstGhost.transform.SetParent(null);
+                    
+                    List<Vector3> pathPositions = firstGhost.GetReversePath();
+                    List<Quaternion> pathRotations = firstGhost.GetReverseRotation();
+
+                    yield return _playerController.StartCoroutine(FollowPathBackwards(pathPositions, pathRotations));
+
+                    // Garante posição final exata
+                    _playerController.transform.position = firstGhost.Data.position;
+                    _playerController.transform.rotation = firstGhost.Data.rotation;
+                    
+                    // O primeiro ghost permanece congelado no mundo, não re-anexado ao player
+                }
+            }
+
+            // Remove todos os ghosts exceto o primeiro
+            for (int i = _pastGhosts.Count - 1; i >= 1; i--) {
+                if (_pastGhosts[i] != null) {
+                    UnityEngine.Object.Destroy(_pastGhosts[i].gameObject);
+                }
+                _pastGhosts.RemoveAt(i);
+            }
+
+            // Reativa gravidade
+            if (rigidbody != null) {
+                rigidbody.useGravity = true;
+            }
+
+            _playerController.PlayerMovement.enabled = true;
+            _isRewinding = false;
+
+            _shouldCreateNewGhost = true;
+
+            PlayerDebugManager.Instance?.AddLine("Voltou ao primeiro checkpoint!", "PlayerRewind");
         }
 
         private IEnumerator FollowPathBackwards(List<Vector3> pathPositions, List<Quaternion> pathRotations) {

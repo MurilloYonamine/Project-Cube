@@ -14,7 +14,9 @@ public abstract partial class MenuState : MonoBehaviour
     {
         MainMenu,
         Settings,
-        PhaseSelector
+        PhaseSelector,
+        Credits,
+        Controls
     }
 
     /// <summary>
