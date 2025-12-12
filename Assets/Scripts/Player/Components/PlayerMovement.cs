@@ -14,6 +14,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         [Header("Movement Settings")]
         [SerializeField] private float _movementSpeed = 2f;
         [SerializeField] private float _jumpForce = 5f;
+        [SerializeField] private float _fastFallSpeed = 0.5f;
         private Vector2 _movementInput;
 
         [Header("Ground Detection")]
@@ -22,6 +23,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         private bool _wasGrounded;
         
         private bool _isMovementEnabled = true;
+        private float _facingDirection = 1f; // 1 = direita, -1 = esquerda
         
         [Header("Audio")]
         private bool _isPlayingWalkSound = false;
@@ -32,6 +34,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             _rigidbody = _playerController.GetComponent<Rigidbody>();
             _terrainModifierManager = new TerrainModifier();
             _cardBuffManager = _playerController.GetComponent<CardBuffManager>();
+            _facingDirection = _playerController.transform.localScale.x;
             LogMovementInput(Vector2.zero);
         }
 
@@ -52,7 +55,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             
             // Detecta quando acabou de pousar no chão
             if (_isGrounded && !_wasGrounded) {
-                AudioManager.Instance?.PlaySound("Fall");
+                AudioManager.Instance?.PlaySound("Sounds/queda");
             }
             
             if (_isMovementEnabled) {
@@ -84,10 +87,9 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
 
             // Queda rápida para baixo (Dash Fall)
             else if (movementInput.y < 0 && !_isGrounded) {
-                float fallMultiplier = 0.5f;
-                _rigidbody.linearVelocity += _jumpForce * fallMultiplier * Vector3.down;
+                _rigidbody.linearVelocity += _jumpForce * _fastFallSpeed * Vector3.down;
                 
-                AudioManager.Instance?.PlaySound("DashFall");
+                AudioManager.Instance?.PlaySound("Sounds/queda");
             }
         }
         
@@ -110,7 +112,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
                 ForceMode.Impulse
             );
             
-            AudioManager.Instance?.PlaySound("Jump");
+            AudioManager.Instance?.PlaySound("Sounds/pulo");
         }
         
         private void AutoMovement() {
@@ -131,6 +133,13 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             // Aplica flip da carta Mirror
             if (_cardBuffManager != null && _cardBuffManager.IsFlipped()) {
                 direction *= -1f;
+            }
+            
+            // Virar o personagem se mudar de direção
+            if (direction > 0 && _facingDirection < 0) {
+                Flip();
+            } else if (direction < 0 && _facingDirection > 0) {
+                Flip();
             }
             
             float movement = Mathf.Sign(direction) * _movementSpeed * speedModifier;
@@ -157,7 +166,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         private void UpdateWalkSound() {
             if (_isGrounded && Mathf.Abs(_rigidbody.linearVelocity.x) > 0.1f) {
                 if (!_isPlayingWalkSound) {
-                    AudioManager.Instance?.PlaySound("Walk");
+                    // AudioManager.Instance?.PlaySound("Sounds/walk");
                     _isPlayingWalkSound = true;
                 }
             } else {
@@ -176,12 +185,19 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             if (_rigidbody == null) return;
 
             Vector3 raycastOrigin = _rigidbody.position + Vector3.down * 0.5f;
+            Vector3 raycastEnd = raycastOrigin + Vector3.down * _groundDragDistance;
 
+            // Desenha a linha do raycast
             Gizmos.color = _isGrounded ? Color.green : Color.red;
-            Gizmos.DrawLine(
-                raycastOrigin,
-                raycastOrigin + Vector3.down * _groundDragDistance
-            );
+            Gizmos.DrawLine(raycastOrigin, raycastEnd);
+            
+            // Desenha esfera no ponto de origem
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(raycastOrigin, 0.1f);
+            
+            // Desenha esfera no final do raycast
+            Gizmos.color = _isGrounded ? Color.green : Color.red;
+            Gizmos.DrawWireSphere(raycastEnd, 0.1f);
         }
         
         private void LogMovementInput(Vector2 movementInput) {
@@ -202,5 +218,14 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
                 StopWalkSound();
             }
         }
+        
+        private void Flip() {
+            _facingDirection *= -1f;
+            Vector3 scale = _playerController.transform.localScale;
+            scale.x = _facingDirection;
+            _playerController.transform.localScale = scale;
+        }
+        
+        public float GetFacingDirection() => _facingDirection;
     }
 }

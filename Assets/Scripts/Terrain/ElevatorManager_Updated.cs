@@ -75,7 +75,7 @@ namespace PROJECT_CUBE.TERRAIN {
             _currentVelocity = Vector3.zero;
             
             // Tocar som de portal
-            AudioManager.Instance?.PlaySound("Portal");
+            AudioManager.Instance?.PlaySound("Sounds/portal");
 
             Invoke(nameof(EnableTeleport), 0.2f);
         }

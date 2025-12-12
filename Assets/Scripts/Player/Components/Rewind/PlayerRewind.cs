@@ -30,7 +30,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS.REWIND {
         public override void FixedUpdateComponent() {
             if (_isRewinding) return;
 
-            if (_currentActiveGhost == null && _shouldCreateNewGhost) {
+            if (_currentActiveGhost == null && _shouldCreateNewGhost && _playerController.PlayerMovement.IsGrounded) {
                 StartNewGhostCycle();
                 _shouldCreateNewGhost = false;
             }

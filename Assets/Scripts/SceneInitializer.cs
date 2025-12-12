@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -14,6 +15,8 @@ namespace PROJECT_CUBE {
         [Header("Video Settings")]
         [SerializeField] private VideoClip _customVideo; // Opcional - se quiser vídeo diferente
         [SerializeField] private bool _showVideo = true;
+
+        [SerializeField] private AudioClip _backgroundMusic;
         
         private void Start() {
             InitializeScene();
@@ -30,14 +33,14 @@ namespace PROJECT_CUBE {
         }
         
         private void InitializeMusic() {
-            if (MusicManager.Instance == null) return;
+            if (AudioManager.Instance == null) return;
             
             switch (_sceneType) {
                 case SceneType.Level:
-                    MusicManager.Instance.PlayLevelMusic();
+                    AudioManager.Instance.PlayTrack(_backgroundMusic);
                     break;
                 case SceneType.Menu:
-                    MusicManager.Instance.PlayMenuMusic();
+                    AudioManager.Instance.PlayTrack(_backgroundMusic);
                     break;
             }
         }

@@ -1,174 +1,247 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Audio;
 
-namespace PROJECT_CUBE {
-    [Serializable]
-    public class Sound {
-        public string name;
-        public AudioClip clip;
-        
-        [Range(0f, 1f)]
-        public float volume = 1f;
-        
-        [Range(0.1f, 3f)]
-        public float pitch = 1f;
-        
-        public bool loop = false;
-        
-        [HideInInspector]
-        public AudioSource source;
+public class AudioManager : MonoBehaviour {
+    public const string MASTER_VOLUME_PARAMETER_NAME = "MasterVolume";
+    public const string MUSIC_VOLUME_PARAMETER_NAME = "MusicVolume";
+    public const string SFX_VOLUME_PARAMETER_NAME = "SFXVolume";
+    public const float MUTED_VOLUME_LEVEL = -80f;
+
+    private const string SFX_PARENT_NAME = "SFX";
+
+    public static char[] SFX_NAME_FORMAT_CONTAINERS = new char[] { '[', ']' };
+    private static string SFX_NAME_FORMAT = $"SFX - {SFX_NAME_FORMAT_CONTAINERS[0]}" + "{0}" + $"{SFX_NAME_FORMAT_CONTAINERS[1]}";
+
+    public const float TRACK_TRANSITION_SPEED = 1f;
+
+    public static AudioManager Instance { get; private set; }
+
+    public Dictionary<int, AudioChannel> channels = new Dictionary<int, AudioChannel>();
+
+    public AudioMixerGroup musicMixer;
+    public AudioMixerGroup sfxMixer;
+    public AudioMixerGroup masterMixer;
+
+    [Header("3D Audio Settings")]
+    [SerializeField] private float _audio3DMinDistance = 1f;
+    [SerializeField] private float _audio3DMaxDistance = 50f;
+
+    private AnimationCurve audioFalloffCurve;
+    public float minDecibels = -60f;
+    [Tooltip("When no curve is assigned, use Mathf.Pow(slider, volumeExponent). Values <1 boost mid/high; >1 make top less sensitive.")]
+    [Range(0.2f, 3f)]
+    public float volumeExponent = 0.5f;
+
+    // Map a 0..1 slider value to a perceptual volume value (0..1).
+    // If an `audioFalloffCurve` is provided in the inspector, use it; otherwise apply a configurable power curve.
+    private float MapSliderToPerceptual(float sliderValue) {
+        if (audioFalloffCurve != null) {
+            return Mathf.Clamp01(audioFalloffCurve.Evaluate(sliderValue));
+        }
+
+        // Use configurable power mapping (default 0.5 => sqrt) so mid slider positions remain audible.
+        return Mathf.Clamp01(Mathf.Pow(Mathf.Clamp01(sliderValue), volumeExponent));
     }
-    
-    public class AudioManager : MonoBehaviour {
-        private static AudioManager _instance;
-        private static bool _isQuitting = false;
-        
-        public static AudioManager Instance {
-            get {
-                if (_isQuitting) return null;
-                
-                if (_instance == null) {
-                    _instance = FindObjectOfType<AudioManager>();
-                    
-                    if (_instance == null) {
-                        GameObject go = new GameObject("AudioManager");
-                        _instance = go.AddComponent<AudioManager>();
-                        DontDestroyOnLoad(go);
-                    }
-                }
-                return _instance;
-            }
-        }
-        
-        [Header("Sound Library")]
-        [SerializeField] private List<Sound> _sounds = new List<Sound>();
-        
-        [Header("Volume Settings")]
-        [SerializeField] [Range(0f, 1f)] private float _masterVolume = 1f;
-        [SerializeField] [Range(0f, 1f)] private float _sfxVolume = 1f;
-        [SerializeField] [Range(0f, 1f)] private float _musicVolume = 1f;
-        
-        private const string MASTER_VOLUME_KEY = "MasterVolume";
-        private const string SFX_VOLUME_KEY = "SFXVolume";
-        private const string MUSIC_VOLUME_KEY = "MusicVolume";
-        
-        private void Awake() {
-            if (_instance != null && _instance != this) {
-                Destroy(gameObject);
-                return;
-            }
-            _instance = this;
-            _isQuitting = false;
-            
-            // Garante que o GameObject é raiz antes de usar DontDestroyOnLoad
-            if (gameObject.transform.parent != null) {
-                gameObject.transform.SetParent(null);
-            }
+
+    private Transform sfxRoot;
+
+    public AudioSource[] allSFX => sfxRoot.GetComponentsInChildren<AudioSource>();
+
+    private void Awake() {
+        if (Instance == null) {
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
-            
-            InitializeSounds();
-            LoadVolumeSettings();
+            Instance = this;
         }
-        
-        private void OnApplicationQuit() {
-            _isQuitting = true;
+        else {
+            DestroyImmediate(gameObject);
+            return;
         }
-        
-        private void OnDestroy() {
-            if (_instance == this) {
-                _instance = null;
-            }
+
+        // Inicializa a curva de falloff padrão se não estiver atribuída
+        if (audioFalloffCurve == null) {
+            audioFalloffCurve = new AnimationCurve(
+                new Keyframe(0f, 0f, 0f, 2f),
+                new Keyframe(0.5f, 0.5f, 1f, 1f),
+                new Keyframe(1f, 1f, 2f, 0f)
+            );
         }
-        
-        private void InitializeSounds() {
-            if (_sounds.Count == 0) {
-                _sounds = new List<Sound> {
-                    new Sound { name = "Jump", volume = 0.7f },
-                    new Sound { name = "Fall", volume = 0.5f },
-                    new Sound { name = "DashFall", volume = 0.6f },
-                    new Sound { name = "BlueTerrain", volume = 0.4f, loop = true },
-                    new Sound { name = "RedTerrain", volume = 0.4f, loop = true },
-                    new Sound { name = "OrangeTerrain", volume = 0.5f },
-                    new Sound { name = "Cannon", volume = 0.8f },
-                    new Sound { name = "Walk", volume = 0.3f, loop = true },
-                    new Sound { name = "TakeDamage", volume = 0.7f },
-                    new Sound { name = "ButtonSelect", volume = 0.5f },
-                    new Sound { name = "Portal", volume = 0.6f }
-                };
-            }
-            
-            foreach (Sound sound in _sounds) {
-                sound.source = gameObject.AddComponent<AudioSource>();
-                sound.source.clip = sound.clip;
-                sound.source.volume = sound.volume * _sfxVolume * _masterVolume;
-                sound.source.pitch = sound.pitch;
-                sound.source.loop = sound.loop;
-            }
+
+        sfxRoot = new GameObject(SFX_PARENT_NAME).transform;
+        sfxRoot.SetParent(transform);
+    }
+
+    public AudioSource PlaySound(string filePath, AudioMixerGroup mixer = null, float volume = 1, float pitch = 1, bool loop = false, bool is3D = true) {
+        AudioClip clip = Resources.Load<AudioClip>(filePath);
+
+        if (clip == null) {
+            Debug.LogError($"Could not load audio file '{filePath}'. Please make sure this exists in the Resources directory!");
+            return null;
         }
-        
-        public void PlaySound(string soundName) {
-            Sound sound = _sounds.Find(s => s.name == soundName);
-            if (sound == null) {
-                PlayerDebugManager.Instance?.AddLine($"Som '{soundName}' não encontrado!", "AudioManager");
+
+        return PlaySound(clip, mixer, volume, pitch, loop, filePath, is3D);
+    }
+
+    public AudioSource PlaySound(AudioClip clip, AudioMixerGroup mixer = null, float volume = 1, float pitch = 1, bool loop = false, string filePath = "", bool is3D = false) {
+        string fileName = clip.name;
+        if (filePath != string.Empty)
+            fileName = filePath;
+
+        AudioSource effectSource = new GameObject(string.Format(SFX_NAME_FORMAT, fileName)).AddComponent<AudioSource>();
+        effectSource.transform.SetParent(sfxRoot);
+        effectSource.transform.position = sfxRoot.position;
+
+        effectSource.clip = clip;
+
+        if (mixer == null)
+            mixer = sfxMixer;
+
+        effectSource.outputAudioMixerGroup = mixer;
+        effectSource.volume = volume;
+        effectSource.spatialBlend = is3D ? 1f : 0f;
+        effectSource.pitch = pitch;
+        effectSource.loop = loop;
+
+        // Configurar propriedades 3D se ativado
+        if (is3D) {
+            effectSource.minDistance = _audio3DMinDistance;
+            effectSource.maxDistance = _audio3DMaxDistance;
+            effectSource.dopplerLevel = 1f;
+        }
+
+        effectSource.Play();
+
+        if (!loop)
+            Destroy(effectSource.gameObject, (clip.length / pitch) + 1);
+
+        return effectSource;
+    }
+
+    // Voice playback removed from AudioManager. Use PlaySoundEffect / PlayTrack and provide mixer if needed.
+
+    public void StopSound(AudioClip clip) => StopSound(clip.name);
+
+    public void StopSound(string soundName) {
+        soundName = soundName.ToLower();
+
+        AudioSource[] sources = sfxRoot.GetComponentsInChildren<AudioSource>();
+        foreach (var source in sources) {
+            if (source.clip.name.ToLower() == soundName) {
+                Destroy(source.gameObject);
                 return;
             }
-            
-            if (sound.source != null && sound.clip != null) {
-                sound.source.volume = sound.volume * _sfxVolume * _masterVolume;
-                sound.source.Play();
+        }
+    }
+
+    public bool IsPlayingSoundEffect(string soundName) {
+        soundName = soundName.ToLower();
+
+        AudioSource[] sources = sfxRoot.GetComponentsInChildren<AudioSource>();
+        foreach (var source in sources) {
+            if (source.clip.name.ToLower() == soundName)
+                return true;
+        }
+
+        return false;
+    }
+
+    public AudioTrack PlayTrack(string filePath, int channel = 0, bool loop = true, float startingVolume = 0f, float volumeCap = 1f, float pitch = 1f) {
+        AudioClip clip = Resources.Load<AudioClip>(filePath);
+
+        if (clip == null) {
+            Debug.LogError($"Could not load audio file '{filePath}'. Please make sure this exists in the Resources directory!");
+            return null;
+        }
+
+        return PlayTrack(clip, channel, loop, startingVolume, volumeCap, pitch, filePath);
+    }
+
+    public AudioTrack PlayTrack(AudioClip clip, int channel = 0, bool loop = true, float startingVolume = 0f, float volumeCap = 1f, float pitch = 1f, string filePath = "") {
+        AudioChannel audioChannel = TryGetChannel(channel, createIfDoesNotExist: true);
+        AudioTrack track = audioChannel.PlayTrack(clip, loop, startingVolume, volumeCap, pitch, filePath);
+        return track;
+    }
+
+    public void StopTrack(int channel) {
+        AudioChannel c = TryGetChannel(channel, createIfDoesNotExist: false);
+
+        if (c == null)
+            return;
+
+        c.StopTrack();
+    }
+
+    public void StopTrack(string trackName) {
+        trackName = trackName.ToLower();
+
+        foreach (var channel in channels.Values) {
+            if (channel.activeTrack != null && channel.activeTrack.name.ToLower() == trackName) {
+                channel.StopTrack();
+                return;
             }
         }
-        
-        public void StopSound(string soundName) {
-            Sound sound = _sounds.Find(s => s.name == soundName);
-            if (sound != null && sound.source != null) {
-                sound.source.Stop();
-            }
+    }
+
+    public void StopAllTracks() {
+        foreach (AudioChannel channel in channels.Values) {
+            channel.StopTrack();
         }
-        
-        public void SetMasterVolume(float volume) {
-            _masterVolume = Mathf.Clamp01(volume);
-            UpdateAllVolumes();
-            SaveVolumeSettings();
+    }
+
+    public void StopAllSoundEffects() {
+        AudioSource[] sources = sfxRoot.GetComponentsInChildren<AudioSource>();
+        foreach (var source in sources) {
+            Destroy(source.gameObject);
         }
-        
-        public void SetSFXVolume(float volume) {
-            _sfxVolume = Mathf.Clamp01(volume);
-            UpdateAllVolumes();
-            SaveVolumeSettings();
+    }
+
+    public AudioChannel TryGetChannel(int channelNumber, bool createIfDoesNotExist = false) {
+        AudioChannel channel = null;
+
+        if (channels.TryGetValue(channelNumber, out channel)) {
+            return channel;
         }
-        
-        public void SetMusicVolume(float volume) {
-            _musicVolume = Mathf.Clamp01(volume);
-            UpdateAllVolumes();
-            SaveVolumeSettings();
+        else if (createIfDoesNotExist) {
+            channel = new AudioChannel(channelNumber);
+            channels.Add(channelNumber, channel);
+            return channel;
         }
-        
-        private void UpdateAllVolumes() {
-            foreach (Sound sound in _sounds) {
-                if (sound.source != null) {
-                    sound.source.volume = sound.volume * _sfxVolume * _masterVolume;
-                }
-            }
+
+        return null;
+    }
+
+    public void SetMusicVolume(float volume, bool muted) {
+        if (muted) {
+            musicMixer.audioMixer.SetFloat(MUSIC_VOLUME_PARAMETER_NAME, MUTED_VOLUME_LEVEL);
+            return;
         }
-        
-        private void SaveVolumeSettings() {
-            PlayerPrefs.SetFloat(MASTER_VOLUME_KEY, _masterVolume);
-            PlayerPrefs.SetFloat(SFX_VOLUME_KEY, _sfxVolume);
-            PlayerPrefs.SetFloat(MUSIC_VOLUME_KEY, _musicVolume);
-            PlayerPrefs.Save();
+
+        float mapped = MapSliderToPerceptual(volume);
+        float db = Mathf.Lerp(minDecibels, 0f, mapped);
+        musicMixer.audioMixer.SetFloat(MUSIC_VOLUME_PARAMETER_NAME, db);
+    }
+
+    public void SetSFXVolume(float volume, bool muted) {
+        if (muted) {
+            sfxMixer.audioMixer.SetFloat(SFX_VOLUME_PARAMETER_NAME, MUTED_VOLUME_LEVEL);
+            return;
         }
-        
-        private void LoadVolumeSettings() {
-            _masterVolume = PlayerPrefs.GetFloat(MASTER_VOLUME_KEY, 1f);
-            _sfxVolume = PlayerPrefs.GetFloat(SFX_VOLUME_KEY, 1f);
-            _musicVolume = PlayerPrefs.GetFloat(MUSIC_VOLUME_KEY, 1f);
-            UpdateAllVolumes();
+
+        float mapped = MapSliderToPerceptual(volume);
+        float db = Mathf.Lerp(minDecibels, 0f, mapped);
+        sfxMixer.audioMixer.SetFloat(SFX_VOLUME_PARAMETER_NAME, db);
+    }
+
+
+    public void SetMasterVolume(float volume, bool muted) {
+        if (muted) {
+            masterMixer.audioMixer.SetFloat(MASTER_VOLUME_PARAMETER_NAME, MUTED_VOLUME_LEVEL);
+            return;
         }
-        
-        public float GetMasterVolume() => _masterVolume;
-        public float GetSFXVolume() => _sfxVolume;
-        public float GetMusicVolume() => _musicVolume;
+
+        float mapped = MapSliderToPerceptual(volume);
+        float db = Mathf.Lerp(minDecibels, 0f, mapped);
+        masterMixer.audioMixer.SetFloat(MASTER_VOLUME_PARAMETER_NAME, db);
     }
 }
