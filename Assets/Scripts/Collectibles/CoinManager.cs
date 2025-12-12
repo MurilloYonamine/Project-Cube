@@ -15,7 +15,7 @@ namespace PROJECT_CUBE.COLLECTIBLES {
         }
         
         private const string COIN_KEY = "TotalCoins";
-        private int _currentCoins;
+        [SerializeField] private int _currentCoins = 0;
         
         public int CurrentCoins => _currentCoins;
         

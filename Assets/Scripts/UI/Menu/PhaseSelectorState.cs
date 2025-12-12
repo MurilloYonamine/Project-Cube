@@ -34,15 +34,29 @@ public partial class PhaseSelectorState : MenuState
     {
         // Configura o botão voltar
         if (backButton != null)
+        {
+            Debug.Log("[PhaseSelectorState] Adding listener to back button");
             backButton.onClick.AddListener(OnBackClicked);
+        }
+        else
+        {
+            Debug.LogError("[PhaseSelectorState] backButton is NULL in Inspector!");
+        }
 
         // Configura os botões de fase
         for (int i = 0; i < phaseButtons.Length; i++)
         {
             int phaseIndex = i; // Captura para closure
-            phaseButtons[i].onClick.AddListener(() => OnPhaseSelected(phaseIndex + 1));
+            int phaseNumber = phaseIndex;
+            
+            phaseButtons[i].onClick.AddListener(() => OnPhaseSelected(phaseNumber));
+            
+            // Verifica se o nível está desbloqueado
+            bool isUnlocked = LevelManager.Instance.IsLevelUnlocked(phaseNumber);
+            phaseButtons[i].interactable = isUnlocked;
+            
             // Atualiza o ícone de cadeado (se houver) de acordo com o progresso
-            TryApplyLockSprite(phaseButtons[i], phaseIndex + 1);
+            TryApplyLockSprite(phaseButtons[i], phaseNumber);
         }
     }
 
@@ -61,8 +75,14 @@ public partial class PhaseSelectorState : MenuState
     private void OnPhaseSelected(int phaseNumber)
     {
         Debug.Log($"Phase {phaseNumber} selected - Loading scene...");
-        // TODO: Implementar carregamento de cena da fase
-        // SceneManager.LoadScene($"Level_{phaseNumber}");
+        
+        // Reseta o timeScale se estiver vindo do pause
+        if (PauseManager.Instance != null && PauseManager.Instance.IsPaused())
+        {
+            PauseManager.Instance.ResetTimeScale();
+        }
+        
+        LevelManager.Instance.LoadLevel(phaseNumber);
     }
 
     private void TryApplyLockSprite(Button btn, int phaseNumber)
@@ -110,7 +130,15 @@ public partial class PhaseSelectorState : MenuState
 
     private void OnBackClicked()
     {
-        Debug.Log("Back button clicked - Returning to Main Menu");
-        menuManager.ChangeState(MenuState.StateType.MainMenu);
+        Debug.Log("[PhaseSelectorState] Back button clicked");
+        
+        if (menuManager == null)
+        {
+            Debug.LogError("[PhaseSelectorState] menuManager is null!");
+            return;
+        }
+        
+        Debug.Log("[PhaseSelectorState] Calling GoToPreviousState");
+        menuManager.GoToPreviousState();
     }
 }

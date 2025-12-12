@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -35,22 +36,53 @@ namespace PROJECT_CUBE.CARDS {
         
         private void OnTriggerEnter(Collider other) {
             if (_hasBeenUsed) return;
-            
+
             PLAYER.PlayerController player = other.GetComponent<PLAYER.PlayerController>();
             if (player != null) {
-                CardData selectedCard = SelectRandomCard();
+                PlayerCardInventory inventory = player.GetComponent<PlayerCardInventory>();
+                CardData selectedCard = SelectRandomCardExcludingInventory(inventory);
                 CardBuffManager cardManager = player.GetComponent<CardBuffManager>();
-                
-                if (cardManager != null) {
-                    cardManager.ApplyCard(selectedCard);
-                }
-                
                 _hasBeenUsed = true;
+
+                // Immediately hide visuals and disable interaction so the pickup disappears right away
+                HidePickupVisuals();
+
+                // Request UI spinner via event. UI listener should run visual and call the provided callback when done.
+                if (CardUIEvents.OnSpinnerStartRequested != null) {
+                    CardUIEvents.OnSpinnerStartRequested.Invoke(_availableCards, selectedCard, () => {
+                        if (cardManager != null) cardManager.ApplyCard(selectedCard);
+                        // add to inventory after application
+                        if (inventory != null) inventory.AddCard(selectedCard);
+                        Destroy(gameObject);
+                    });
+                    return;
+                }
+
+                // Fallback: no UI listener, apply immediately
+                if (cardManager != null) cardManager.ApplyCard(selectedCard);
+                if (inventory != null) inventory.AddCard(selectedCard);
                 Destroy(gameObject);
             }
         }
+
+        private void HidePickupVisuals() {
+            // stop rotating
+            _rotationSpeed = 0f;
+
+            // disable all renderers under this object
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            foreach (var r in renderers) r.enabled = false;
+
+            // disable collider to prevent further triggers
+            var col = GetComponent<Collider>();
+            if (col != null) col.enabled = false;
+
+            // optionally disable particle systems
+            var particles = GetComponentsInChildren<ParticleSystem>(true);
+            foreach (var p in particles) p.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
         
-        private CardData SelectRandomCard() {
+        public CardData SelectRandomCard() {
             float totalProbability = 0f;
             foreach (var card in _availableCards) {
                 totalProbability += card.probability;
@@ -67,6 +99,28 @@ namespace PROJECT_CUBE.CARDS {
             }
             
             return _availableCards[0];
+        }
+
+        private CardData SelectRandomCardExcludingInventory(PlayerCardInventory inventory) {
+            if (inventory == null) return SelectRandomCard();
+
+            List<CardData> filtered = new List<CardData>();
+            foreach (var card in _availableCards) {
+                if (card == null) continue;
+                if (!inventory.HasCard(card.type)) filtered.Add(card);
+            }
+
+            if (filtered.Count == 0) return SelectRandomCard(); // fallback: allow repeats
+
+            float totalProb = 0f;
+            foreach (var c in filtered) totalProb += c.probability;
+            float randomValue = UnityEngine.Random.Range(0f, totalProb);
+            float cumulative = 0f;
+            foreach (var c in filtered) {
+                cumulative += c.probability;
+                if (randomValue <= cumulative) return c;
+            }
+            return filtered[0];
         }
     }
 }

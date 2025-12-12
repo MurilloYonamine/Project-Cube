@@ -26,6 +26,9 @@ namespace PROJECT_CUBE.LEVEL {
                 return;
             }
             _instance = this;
+
+            gameObject.transform.SetParent(null);
+
             DontDestroyOnLoad(gameObject);
             LoadProgress();
         }
@@ -44,6 +47,12 @@ namespace PROJECT_CUBE.LEVEL {
         
         public void LoadLevel(int levelNumber) {
             if (IsLevelUnlocked(levelNumber)) {
+                // Reseta as moedas quando começar da fase 0
+                if (levelNumber == 0) {
+                    COLLECTIBLES.CoinManager.Instance.ResetCoins();
+                    PlayerDebugManager.Instance?.AddLine("Moedas resetadas (Fase 0 iniciada)", "LevelManager");
+                }
+                
                 SceneManager.LoadScene($"Level {levelNumber}");
             } else {
                 PlayerDebugManager.Instance?.AddLine($"Fase {levelNumber} está bloqueada!", "LevelManager");

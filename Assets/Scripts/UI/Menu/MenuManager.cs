@@ -103,6 +103,17 @@ public class MenuManager : MonoBehaviour {
     }
 
     /// <summary>
+    /// Volta para o MainMenu.
+    /// </summary>
+    public void GoToPreviousState()
+    {
+        if (isTransitioning)
+            return;
+
+        StartCoroutine(TransitionToState(MenuState.StateType.MainMenu));
+    }
+
+    /// <summary>
     /// Corrotina que gerencia a transição entre estados.
     /// </summary>
     private IEnumerator TransitionToState(MenuState.StateType newStateType) {

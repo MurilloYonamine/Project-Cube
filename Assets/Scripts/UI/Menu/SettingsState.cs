@@ -51,7 +51,14 @@ public partial class SettingsState : MenuState
 
         // Configura o botão voltar
         if (backButton != null)
+        {
+            Debug.Log("[SettingsState] Adding listener to back button");
             backButton.onClick.AddListener(OnBackClicked);
+        }
+        else
+        {
+            Debug.LogError("[SettingsState] backButton is NULL in Inspector!");
+        }
 
         UpdateVolumeLabels();
     }
@@ -113,7 +120,15 @@ public partial class SettingsState : MenuState
 
     private void OnBackClicked()
     {
-        Debug.Log("Back button clicked - Returning to Main Menu");
-        menuManager.ChangeState(MenuState.StateType.MainMenu);
+        Debug.Log("[SettingsState] Back button clicked");
+        
+        if (menuManager == null)
+        {
+            Debug.LogError("[SettingsState] menuManager is null!");
+            return;
+        }
+        
+        Debug.Log("[SettingsState] Calling GoToPreviousState");
+        menuManager.GoToPreviousState();
     }
 }

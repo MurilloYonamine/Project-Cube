@@ -15,6 +15,7 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         [SerializeField] private float _movementSpeed = 2f;
         [SerializeField] private float _jumpForce = 5f;
         [SerializeField] private float _fastFallSpeed = 0.5f;
+        [SerializeField] private bool lockToBaseSpeed = true;
         private Vector2 _movementInput;
 
         [Header("Ground Detection")]
@@ -65,6 +66,11 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
         }
         
         private void HandleMovement(Vector2 movementInput) {
+            // Impede movimento para a esquerda
+            if (movementInput.x < 0) {
+                movementInput.x = 0;
+            }
+            
             _movementInput = movementInput;
 
             LogMovementInput(movementInput);
@@ -86,10 +92,14 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             }
 
             // Queda rápida para baixo (Dash Fall)
-            else if (movementInput.y < 0 && !_isGrounded) {
-                _rigidbody.linearVelocity += _jumpForce * _fastFallSpeed * Vector3.down;
-                
-                AudioManager.Instance?.PlaySound("Sounds/queda");
+                else if (movementInput.y < 0 && !_isGrounded) {
+                    // Queda rápida: definir a velocidade Y diretamente em vez de somar um impulso.
+                    // Isso evita aplicar forças que podem provocar um quique ao colidir com o chão.
+                    Vector3 vel = _rigidbody.linearVelocity;
+                    vel.y = -Mathf.Abs(_jumpForce * _fastFallSpeed);
+                    _rigidbody.linearVelocity = vel;
+
+                    AudioManager.Instance?.PlaySound("Sounds/queda");
             }
         }
         
@@ -122,12 +132,12 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
             }
             
             float speedModifier = _terrainModifierManager != null ? _terrainModifierManager.CurrentSpeedModifier : 1f;
-            
+
             // Aplica buff de velocidade da carta Particle
             if (_cardBuffManager != null) {
                 speedModifier *= _cardBuffManager.GetSpeedMultiplier();
             }
-            
+
             float direction = _movementInput.x != 0 ? _movementInput.x : 1f;
             
             // Aplica flip da carta Mirror
@@ -142,7 +152,16 @@ namespace PROJECT_CUBE.PLAYER.COMPONENTS {
                 Flip();
             }
             
-            float movement = Mathf.Sign(direction) * _movementSpeed * speedModifier;
+            float movement;
+            if (lockToBaseSpeed)
+            {
+                // Mantém velocidade fixa (apenas base), ignora modificadores
+                movement = Mathf.Sign(direction) * _movementSpeed;
+            }
+            else
+            {
+                movement = Mathf.Sign(direction) * _movementSpeed * speedModifier;
+            }
 
             _rigidbody.linearVelocity = new Vector3(
                 movement, 
