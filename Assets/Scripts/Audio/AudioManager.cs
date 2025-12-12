@@ -36,12 +36,23 @@ public class AudioManager : MonoBehaviour {
     // Map a 0..1 slider value to a perceptual volume value (0..1).
     // If an `audioFalloffCurve` is provided in the inspector, use it; otherwise apply a configurable power curve.
     private float MapSliderToPerceptual(float sliderValue) {
+        sliderValue = Mathf.Clamp01(sliderValue);
+
         if (audioFalloffCurve != null) {
-            return Mathf.Clamp01(audioFalloffCurve.Evaluate(sliderValue));
+            float eval = Mathf.Clamp01(audioFalloffCurve.Evaluate(sliderValue));
+            // Se a curva foi configurada de forma estranha e retorna 0 para valores altos,
+            // caia para o mapeamento por potência como fallback para evitar silenciar inesperadamente.
+            if (eval <= 0.0001f && sliderValue > 0.01f)
+            {
+                float fb = Mathf.Clamp01(Mathf.Pow(sliderValue, volumeExponent));
+                return fb;
+            }
+
+            return eval;
         }
 
         // Use configurable power mapping (default 0.5 => sqrt) so mid slider positions remain audible.
-        return Mathf.Clamp01(Mathf.Pow(Mathf.Clamp01(sliderValue), volumeExponent));
+        return Mathf.Clamp01(Mathf.Pow(sliderValue, volumeExponent));
     }
 
     private Transform sfxRoot;
@@ -212,6 +223,10 @@ public class AudioManager : MonoBehaviour {
     }
 
     public void SetMusicVolume(float volume, bool muted) {
+        if (musicMixer == null || musicMixer.audioMixer == null) {
+            return;
+        }
+
         if (muted) {
             musicMixer.audioMixer.SetFloat(MUSIC_VOLUME_PARAMETER_NAME, MUTED_VOLUME_LEVEL);
             return;
@@ -223,6 +238,10 @@ public class AudioManager : MonoBehaviour {
     }
 
     public void SetSFXVolume(float volume, bool muted) {
+        if (sfxMixer == null || sfxMixer.audioMixer == null) {
+            return;
+        }
+
         if (muted) {
             sfxMixer.audioMixer.SetFloat(SFX_VOLUME_PARAMETER_NAME, MUTED_VOLUME_LEVEL);
             return;
@@ -235,6 +254,12 @@ public class AudioManager : MonoBehaviour {
 
 
     public void SetMasterVolume(float volume, bool muted) {
+        if (masterMixer == null || masterMixer.audioMixer == null) {
+            float fb = MapSliderToPerceptual(volume);
+            AudioListener.volume = fb;
+            return;
+        }
+
         if (muted) {
             masterMixer.audioMixer.SetFloat(MASTER_VOLUME_PARAMETER_NAME, MUTED_VOLUME_LEVEL);
             return;
@@ -243,5 +268,78 @@ public class AudioManager : MonoBehaviour {
         float mapped = MapSliderToPerceptual(volume);
         float db = Mathf.Lerp(minDecibels, 0f, mapped);
         masterMixer.audioMixer.SetFloat(MASTER_VOLUME_PARAMETER_NAME, db);
+        // Also set AudioListener.volume as a fallback to ensure audible change
+        AudioListener.volume = mapped;
+    }
+
+    /// <summary>
+    /// Retorna um valor em 0..1 correspondente ao slider que geraria o nível atual do mixer Master.
+    /// Faz a operação inversa de SetMasterVolume.
+    /// </summary>
+    public float GetMasterSliderValue()
+    {
+        float db;
+        if (!masterMixer.audioMixer.GetFloat(MASTER_VOLUME_PARAMETER_NAME, out db))
+            return 1f;
+
+        if (db <= MUTED_VOLUME_LEVEL)
+            return 0f;
+
+        float mapped = Mathf.InverseLerp(minDecibels, 0f, db);
+        return InverseMapPerceptual(mapped);
+    }
+
+    public float GetMusicSliderValue()
+    {
+        float db;
+        if (!musicMixer.audioMixer.GetFloat(MUSIC_VOLUME_PARAMETER_NAME, out db))
+            return 1f;
+
+        if (db <= MUTED_VOLUME_LEVEL)
+            return 0f;
+
+        float mapped = Mathf.InverseLerp(minDecibels, 0f, db);
+        return InverseMapPerceptual(mapped);
+    }
+
+    public float GetSFXSliderValue()
+    {
+        float db;
+        if (!sfxMixer.audioMixer.GetFloat(SFX_VOLUME_PARAMETER_NAME, out db))
+            return 1f;
+
+        if (db <= MUTED_VOLUME_LEVEL)
+            return 0f;
+
+        float mapped = Mathf.InverseLerp(minDecibels, 0f, db);
+        return InverseMapPerceptual(mapped);
+    }
+
+    // Inverte a curva perceptual usada em MapSliderToPerceptual.
+    // Se audioFalloffCurve existe, faz uma busca binária na curva para encontrar t tal que Evaluate(t) ~= mapped.
+    private float InverseMapPerceptual(float mapped)
+    {
+        mapped = Mathf.Clamp01(mapped);
+        if (audioFalloffCurve != null)
+        {
+            float lo = 0f, hi = 1f, mid = 0f;
+            for (int i = 0; i < 24; i++)
+            {
+                mid = (lo + hi) * 0.5f;
+                float val = audioFalloffCurve.Evaluate(mid);
+                if (val < mapped)
+                    lo = mid;
+                else
+                    hi = mid;
+            }
+            return Mathf.Clamp01((lo + hi) * 0.5f);
+        }
+
+        // Caso não haja curva, a função forward é Pow(slider, volumeExponent).
+        // Inversa: slider = mapped^(1/volumeExponent)
+        if (Mathf.Approximately(volumeExponent, 0f))
+            return mapped;
+
+        return Mathf.Clamp01(Mathf.Pow(mapped, 1f / volumeExponent));
     }
 }
