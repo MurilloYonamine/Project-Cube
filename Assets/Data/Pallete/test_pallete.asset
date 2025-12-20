@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14b327b33dbb88b41b878b82da04b563, type: 3}
+  m_Name: test_pallete
+  m_EditorClassIdentifier: Assembly-CSharp::PROJECT_CUBE.LEVEL_GENERATION.CubePalette
+  _cubeTypes:
+  - _typeName: Blue Terrain
+    _prefab: {fileID: 9027277081548094917, guid: 9bf2a85f45986ab479b05497f5105192, type: 3}
+    _cubeType: 0
+    _editorColor: {r: 1, g: 0.8581352, b: 0, a: 1}
+  - _typeName: Player
+    _prefab: {fileID: 4998474649887706235, guid: 35fcaded7dfd12e45bfb4aebb2a256f8, type: 3}
+    _cubeType: 1
+    _editorColor: {r: 0.25080538, g: 1, b: 0, a: 1}
+  _baseScene: {fileID: 102900000, guid: 99c9720ab356a0642a771bea13969a05, type: 3}
